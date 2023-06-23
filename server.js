@@ -31,7 +31,7 @@ app.get('/', async (req, res) => {
         .map(line => {
           if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
             const path = encodeURIComponent(line);
-            const modifiedUrl = `http://localhost:3000/?url=${baseUrl}${path}`;
+            const modifiedUrl = `https://corsproxy-kohl.vercel.app/?url=${baseUrl}${path}`;
             console.log('Modified URL:', modifiedUrl);
             return modifiedUrl;
           }
