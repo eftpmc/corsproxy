@@ -1,15 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-
+const stream = require('stream');
 const app = express();
 const port = 3000;
 
-const corsOptions = {
-  origin: ['http://localhost:5173', 'https://aritools.vercel.app/'],
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.get('/', async (req, res) => {
   const videoUrl = req.query.url;
@@ -23,33 +19,44 @@ app.get('/', async (req, res) => {
   }
 
   try {
-    const response = await axios.get(videoUrl, { responseType: 'arraybuffer' });
-    const contentType = response.headers['content-type'];
+    // Stream the content instead of fetching it in its entirety
+    const axiosStream = await axios.get(videoUrl, {
+      responseType: 'stream',
+      timeout: 5000
+    });
 
-    console.log('Fetched content with type:', contentType);
-
+    // Properly setting content-type for m3u8 files
+    const contentType = axiosStream.headers['content-type'];
     if (contentType === 'application/vnd.apple.mpegurl' || contentType === 'application/x-mpegURL') {
-      const baseUrl = videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1);
-      
-      const modifiedPlaylist = response.data.toString().split('\n')
-        .map(line => {
-          if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
-            const path = encodeURIComponent(line);
-            const modifiedUrl = `https://corsproxy-kohl.vercel.app/?url=${baseUrl}${path}`;
-            console.log('Modified URL:', modifiedUrl);
-            return modifiedUrl;
-          }
-          return line;
-        })
-        .join('\n');
+      res.set('Content-Type', contentType);
 
-      console.log('Sending modified playlist');
-      res.set('Content-Type', contentType);
-      res.send(modifiedPlaylist);
+      // Transform the stream to modify the URLs in the playlist
+      const transformer = new stream.Transform({
+        transform(chunk, encoding, callback) {
+          const baseUrl = videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1);
+          const lines = chunk.toString().split('\n');
+          const modifiedLines = lines.map(line => {
+            line = line.trim();
+            if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
+              const path = line;
+              const modifiedUrl = `http://localhost:3000/?url=${encodeURIComponent(baseUrl + path)}`;
+              console.log('Modified URL:', modifiedUrl);
+              return modifiedUrl;
+            }
+            return line;
+          });
+          const modifiedChunk = modifiedLines.join('\n');
+          callback(null, modifiedChunk);
+        }
+      });
+      
+
+      // Pipe the transformed data to the client
+      axiosStream.data.pipe(transformer).pipe(res);
+
     } else {
-      console.log('Sending content as is');
-      res.set('Content-Type', contentType);
-      res.send(Buffer.from(response.data, 'binary'));
+      // For other content types, just pipe through
+      axiosStream.data.pipe(res);
     }
   } catch (error) {
     console.error('Caught error during request:', error);
