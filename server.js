@@ -41,7 +41,7 @@ app.get('/m3u8-proxy', async (req, res) => {
             line = line.trim();
             if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
               const path = line;
-              const modifiedUrl = `http://localhost:3000/m3u8-proxy?url=${encodeURIComponent(baseUrl + path)}`;
+              const modifiedUrl = `https://still-reef-00786-c02345b768a6.herokuapp.com/m3u8-proxy?url=${encodeURIComponent(baseUrl + path)}`;
               console.log('Modified URL:', modifiedUrl);
               return modifiedUrl;
             }
