@@ -3,13 +3,20 @@ const cors = require('cors');
 const axios = require('axios');
 const stream = require('stream');
 const app = express();
+const port = process.env.PORT || 5000;
 
-const port = process.env.PORT || 3000;
-const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+app.use((req, res, next) => {
+  const allowedOrigins = ['http://localhost:5173', 'https://aritools.vercel.app', 'https://aritools.xyz'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
-app.use(cors());
-
-app.get('/', async (req, res) => {
+app.get('/m3u8-proxy', async (req, res) => {
   const videoUrl = req.query.url;
 
   if (!videoUrl) {
@@ -28,12 +35,14 @@ app.get('/', async (req, res) => {
 
       const transformer = new stream.Transform({
         transform(chunk, encoding, callback) {
+          const baseUrl = videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1);
           const lines = chunk.toString().split('\n');
           const modifiedLines = lines.map(line => {
             line = line.trim();
             if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
               const path = line;
-              const modifiedUrl = `${baseUrl}/?url=${encodeURIComponent(videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1) + path)}`;
+              const modifiedUrl = `http://localhost:3000/m3u8-proxy?url=${encodeURIComponent(baseUrl + path)}`;
+              console.log('Modified URL:', modifiedUrl);
               return modifiedUrl;
             }
             return line;

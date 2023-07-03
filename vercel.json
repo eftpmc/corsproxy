@@ -1,0 +1,13 @@
+{
+    "rewrites": [
+      {
+        "source": "/m3u8-proxy(.*)",
+        "destination": "/api/m3u8-proxy$1"
+      },
+      {
+        "source": "/(.*)",
+        "destination": "/api/$1"
+      }
+    ]
+  }
+  
