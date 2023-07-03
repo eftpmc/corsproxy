@@ -9,7 +9,7 @@ const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
 
 app.use(cors());
 
-app.get('/m3u8-proxy', async (req, res) => {
+app.get('/', async (req, res) => {
   const videoUrl = req.query.url;
 
   if (!videoUrl) {
@@ -33,7 +33,7 @@ app.get('/m3u8-proxy', async (req, res) => {
             line = line.trim();
             if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
               const path = line;
-              const modifiedUrl = `${baseUrl}/m3u8-proxy?url=${encodeURIComponent(videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1) + path)}`;
+              const modifiedUrl = `${baseUrl}/?url=${encodeURIComponent(videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1) + path)}`;
               return modifiedUrl;
             }
             return line;
