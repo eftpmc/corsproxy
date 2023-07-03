@@ -3,59 +3,48 @@ const cors = require('cors');
 const axios = require('axios');
 const stream = require('stream');
 const app = express();
-const port = 3000;
+
+const port = process.env.PORT || 3000;
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
 
 app.use(cors());
 
-app.get('/', async (req, res) => {
+app.get('/m3u8-proxy', async (req, res) => {
   const videoUrl = req.query.url;
 
-  console.log('Received request with video URL:', videoUrl);
-
   if (!videoUrl) {
-    console.log('Error: Missing url parameter');
-    res.status(400).send('The url parameter is required');
-    return;
+    return res.status(400).send('The url parameter is required');
   }
 
   try {
-    // Stream the content instead of fetching it in its entirety
     const axiosStream = await axios.get(videoUrl, {
       responseType: 'stream',
-      timeout: 5000
+      timeout: 5000,
     });
 
-    // Properly setting content-type for m3u8 files
     const contentType = axiosStream.headers['content-type'];
     if (contentType === 'application/vnd.apple.mpegurl' || contentType === 'application/x-mpegURL') {
       res.set('Content-Type', contentType);
 
-      // Transform the stream to modify the URLs in the playlist
       const transformer = new stream.Transform({
         transform(chunk, encoding, callback) {
-          const baseUrl = videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1);
           const lines = chunk.toString().split('\n');
           const modifiedLines = lines.map(line => {
             line = line.trim();
             if (line.endsWith('.ts') || line.endsWith('.m3u8')) {
               const path = line;
-              const modifiedUrl = `http://localhost:3000/?url=${encodeURIComponent(baseUrl + path)}`;
-              console.log('Modified URL:', modifiedUrl);
+              const modifiedUrl = `${baseUrl}/m3u8-proxy?url=${encodeURIComponent(videoUrl.slice(0, videoUrl.lastIndexOf('/') + 1) + path)}`;
               return modifiedUrl;
             }
             return line;
           });
           const modifiedChunk = modifiedLines.join('\n');
           callback(null, modifiedChunk);
-        }
+        },
       });
-      
 
-      // Pipe the transformed data to the client
       axiosStream.data.pipe(transformer).pipe(res);
-
     } else {
-      // For other content types, just pipe through
       axiosStream.data.pipe(res);
     }
   } catch (error) {
