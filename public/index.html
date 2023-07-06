@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Ari M3U8 Proxy</title>
+        <meta charset="utf-8">
+        <style>
+            body {
+                background-color: #1f1f1f;
+                color: #ffffff;
+                font-family: Arial, sans-serif;
+            }
+            
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+                margin-top: 0;
+            }
+            
+            p {
+                margin-bottom: 20px;
+            }
+            
+            label {
+                display: block;
+                margin-bottom: 10px;
+                font-weight: bold;
+            }
+            
+            input[type="text"],
+            textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ffffff;
+                background-color: #313131;
+                color: #ffffff;
+                border-radius: 4px;
+                resize: none;
+            }
+            
+            button {
+                padding: 10px 20px;
+                background-color: #4c75a3;
+                color: #ffffff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            
+            button:hover {
+                background-color: #336699;
+            }
+            
+            video {
+                width: 100%;
+                height: auto;
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Ari M3U8 Proxy</h1>
+            <p>Proxy and play M3U8 files with customized headers.</p>
+            <label for="url">URL</label>
+            <input type="text" id="url" value="https://c-an-ca4.betterstream.cc:2223/hls-playback/fa7a03115fbc2430273835a0371c449eccd0b79b58da917f357f870f9d5828164c6320bf921a4d4dbf729431e4aabc013f2e1f49dd5bbd750bbdae11150dab7d300836f18218d81993674264afd618d9b8804bfd2f78573d12c32bfc233798cc66500e31a92e2b6322c32249d68eecba51f3e858d2e61647c4f4889c26dc7c3ad55d5d4eb2af6c6eeec120c622724b48/master.m3u8" />
+            <button onclick="test()">Test</button>
+            <video id="hls" controls></video>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+        <script>
+            function test() {
+                const url = document.getElementById('url').value;
+
+                console.log("Using URL " + url);
+
+                if (Hls.isSupported()) {
+                    var video = document.getElementById('hls');
+                    var hls = new Hls();
+                    hls.loadSource(`/api/m3u8-proxy?url=${encodeURIComponent(url)}`);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        console.log(`/api/m3u8-proxy?url=${encodeURIComponent(url)}`);
+                    });
+                }
+            }
+        </script>
+    </body>
+</html>
